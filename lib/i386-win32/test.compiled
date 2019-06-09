@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<CONFIG>
-  <Compiler Value="C:\Program Files\bin\i386-Win32\fpc.exe" Date="1262916632"/>
-  <Params Value=" -MObjFPC -Scghi -O1 -g -gl -l -vewnhibq -FiD:\programs\lazarus\projects\Zapoctak_minezweeper\lib\i386-win32 -FuD:\programs\lazarus\projects\Zapoctak_minezweeper\ -FUD:\programs\lazarus\projects\Zapoctak_minezweeper\lib\i386-win32\ test.pas"/>
-</CONFIG>
