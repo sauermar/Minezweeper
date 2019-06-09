@@ -1,20 +1,21 @@
 program Game01;
-uses wingraph, winmouse;
+uses wingraph, winmouse, wincrt;
 
 type
 		STATE = (closed,opened,flaged);
+
 var
-    bitmaps: array [0..5] of pointer;
+    bitmaps: array [0..6] of pointer;
     grid: array[0..24, 0..16] of STATE;
 
-procedure LoadStaticImage(filename:string; n:smallint; var bitmap: pointer);
+procedure LoadStaticImage(filename:string; n, m:smallint; var bitmap: pointer);
 {loads a 24 bits per pixel image from a given file,
- n stands for image width and height (suppose it is squared)}
+ n stands for image width and m for height (suppose it is squared)}
 var size: longint;
     f     : file;
 begin
  //returns the number of bytes needed to store the image
-	size:=ImageSize(1,1,n,n);
+	size:=ImageSize(1,1,n,m);
   //reserves Size bytes memory on the heap, and returns a pointer to this memory
   GetMem(bitmap,size);
   {$I-} Assign(f,filename); Reset(f,1); {$I+}
@@ -49,12 +50,13 @@ var
      ReadLn();
      Halt(1);
      end;
-  LoadStaticImage('flag.bmp', 25, bitmaps[0]);
-  LoadStaticImage('smileyface.bmp', 45, bitmaps[1]);
-  LoadStaticImage('surpface.bmp', 45, bitmaps[2]);
-  LoadStaticImage('bombface.bmp', 45, bitmaps[3]);
-  LoadStaticImage('wonface.bmp', 45, bitmaps[4]);
-  LoadStaticImage('square02.bmp', 25, bitmaps[5]);
+  LoadStaticImage('flag.bmp', 25, 25, bitmaps[0]);
+  LoadStaticImage('smileyface.bmp', 45, 45, bitmaps[1]);
+  LoadStaticImage('surpface.bmp', 45, 45, bitmaps[2]);
+  LoadStaticImage('bombface.bmp', 45, 45, bitmaps[3]);
+  LoadStaticImage('wonface.bmp', 45, 45, bitmaps[4]);
+  LoadStaticImage('square02.bmp', 25, 25, bitmaps[5]);
+  LoadStaticImage('grid.bmp', 625, 425, bitmaps[6]);
 
   //initialise 2D array (grid)
   for i:= 0 to 24 do
@@ -76,25 +78,20 @@ begin
     end;
     CloseGraph();
 end;
+procedure GameStatus(bitmap : pointer);
+{creates an emoji image for equivalent game progress}
+begin
+PutImage(298,2,bitmap^, NormalPut);
+end;
 
 procedure CreateGrid();
-{Creates a game's grid from images of a square}
-var i,j,k,l : integer;
+{Creates a game's grid from given image}
 begin
- // creating grid
- l:= 0;
- for j:= 0 to 24 do
- begin
-   k:= 0;
- 	for i:= 0 to 16 do
- 	begin
-    // Draws image on Graphics Window with given coordinates
-    PutImage(7+l,50+k,bitmaps[5]^,NormalPut);
-    k:= k+25;
- 	end;
-  l := l + 25;
- end;
+// Draws image on Graphics Window with given coordinates
+PutImage(7,50,bitmaps[6]^,NormalPut);
+FreeMem(bitmaps[6]);
 end;
+
 procedure GetCoordinates(var x,y : smallint);
 {gets the coordinates of the top left corner of the square,
 upon which has been currently mouse button pressed}
@@ -134,6 +131,24 @@ begin
  FillRect(x,y,x+25,y+25);
 end;
 
+procedure Timer(j : integer);
+{creating a timer, which will count number of minutes
+ and seconds from the begining of the game}
+var i : integer;
+begin
+ i:= 0;
+ while i < 60 do //number of seconds
+ begin
+  	inc(i);
+    SetColor(Red);
+    //paint numbers to Graphics window
+    OutTextXY(630,2,'imodium');
+    delay(1000);  // 1000ms = 1s
+ end;
+ inc(j); //increase number of minutes
+ Timer(j);
+end;
+
 procedure ProcessMouseEvents();
 {handles mouse cliking}
 var
@@ -148,31 +163,35 @@ begin
   // left button was pressed = reveal an empty square
   if mouseEvent.buttons and MouseLeftButton <> 0 then
   begin
-        if (x <> -1) and (y <> -1) and (grid[x1,y1] = closed) then
-        begin
-        		OpenSquare(x,y);
-            grid[x1,y1] := opened;
-        end;
+     	GameStatus(bitmaps[2]);
+      if (x <> -1) and (y <> -1) and (grid[x1,y1] = closed) then
+      begin
+      	OpenSquare(x,y);
+        grid[x1,y1] := opened;
+      end;
+      Delay(125);
+      GameStatus(bitmaps[1]);
   end
   //right buttonn was pressed = flag an empty square
   else if mouseEvent.buttons and MouseRightButton <> 0 then
   begin
-        if (x <> -1) and (y <> -1) and (grid[x1,y1] = closed) then
-        		begin
-            	Flag(x,y);
-              grid[x1,y1] := flaged;
-            end
-        else if (x <> -1) and (y <> -1) and (grid[x1,y1] = flaged) then
-        begin
-            UnFlag(x,y);
-            grid[x1,y1] := closed;
-        end;
+  		if (x <> -1) and (y <> -1) and (grid[x1,y1] = closed) then
+      	begin
+        	Flag(x,y);
+          grid[x1,y1] := flaged;
+        end
+      else if (x <> -1) and (y <> -1) and (grid[x1,y1] = flaged) then
+      begin
+      	UnFlag(x,y);
+        grid[x1,y1] := closed;
+      end;
   end;
 end;
 
 procedure Load();
 begin
 	Initialise();
+  GameStatus(bitmaps[1]);
   CreateGrid();
 end;
 
@@ -188,8 +207,10 @@ begin
       if CloseGraphRequest then
       	ended := true;
     	if PollMouseEvent(mouseEvent) then
+      begin
     		ProcessMouseEvents();
-  	end;
+      end;
+    end;
     finalise();
 end;
 
