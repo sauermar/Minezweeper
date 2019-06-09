@@ -1,2 +1,5 @@
-backup\
-lib\
+backup/
+lib/
+lib/i386-win32/winmouse.ppu
+*.lpi
+*.lps

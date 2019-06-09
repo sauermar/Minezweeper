@@ -162,7 +162,7 @@ begin
             	Flag(x,y);
               grid[x1,y1] := flaged;
             end
-        else if (grid[x1,y1] = flaged) then
+        else if (x <> -1) and (y <> -1) and (grid[x1,y1] = flaged) then
         begin
             UnFlag(x,y);
             grid[x1,y1] := closed;
