@@ -1,5 +1,5 @@
-M       M   I  N     N  EEEEEE  ZZZZZZZ W             W EEEEEE  EEEEEE PPPPP  EEEEEE RRRRRRR
-M M   M M   I  N N   N  E            Z   W     W     W  E       E      P    P E      R      R
-M   M   M   I  N  N  N  EEEEEE      Z     W   W W   W   EEEEEE  EEEEEE PPPPP  EEEEEE RRRRRRR
-M       M   I  N   N N  E          Z       W  W W  W    E       E      P      E      R  R
-M       M   I  N    NN  EEEEEE   ZZZZZZZ    WW   WW     EEEEEE  EEEEEE P      EEEEEE R    R
+M       M I N     N EEEEEE ZZZZZZZ               EEEEEE EEEEEE PPPPP  EEEEEE RRRRRRR
+M M   M M I N N   N E          Z   W     W     W E      E      P    P E      R      R
+M   M   M I N  N  N EEEEEE    Z     W   W W   W  EEEEEE EEEEEE PPPPP  EEEEEE RRRRRRR
+M       M I N   N N E        Z       W  W W  W   E      E      P      E      R  R
+M       M I N    NN EEEEEE ZZZZZZZ    WW   WW    EEEEEE EEEEEE P      EEEEEE R    R

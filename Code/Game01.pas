@@ -142,7 +142,7 @@ begin
   	inc(i);
     SetColor(Red);
     //paint numbers to Graphics window
-    OutTextXY(630,2,'imodium');
+    OutTextXY(630,2,i);
     delay(1000);  // 1000ms = 1s
  end;
  inc(j); //increase number of minutes
