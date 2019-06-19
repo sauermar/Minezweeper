@@ -1,6 +1,14 @@
 program Intro1;
 {Introductional part of the program with features described in specification}
-uses wingraph, wincrt;
+uses wingraph, wincrt, winmouse;
+
+var
+    anim  : AnimatType;
+    i : integer;
+    colors: array [0..4] of ^longword = ( @red,@orange,@green,@Blue,@Purple);
+    word: array [0..3] of string = ( 'Start Game','Difficulty',
+    																	'Instructions','Highscore');
+    buttonPressed : boolean;
 
 procedure Initialise();
 {Initialises the Graphics Window}
@@ -39,7 +47,6 @@ procedure LoadFromFile(fileName:string; title: boolean);
 var myFile : Text;
   	texttmp: string;
     i,j: integer;
-    colors: array [0..4] of ^longword = ( @red,@orange,@green,@Blue,@Purple);
 begin
 Randomize; //generate a new sequence of colors every time the program is run
 j:= Random(4);  //Get a random number between 0 and 4
@@ -67,46 +74,151 @@ Repeat
 until Eof(myfile);
 close(myfile);
 end;
-procedure AnimateTitle();
+procedure AnimateTitle(var anim: AnimatType);
 {creates a rotation animation of the title}
 const  width = 500;
        height = 50;
-       Pi18 = Pi/18; //slowing the rotation
-var anim  : AnimatType;
-    i: integer;
 begin
    //gets apropriate number of pixels from screen and saves them as anim
   GetAnim(100,30,125+width-1,50+height-1,Transparent,anim);
   //puts anim bitmap on the screen
   PutAnim(110,40,anim,CopyPut);
   Delay(500);
-  i:=0;
   UpdateGraph(UpdateOff); //used to reduce flickering
-  repeat
+end;
+procedure AnimateTitle2(anim: AnimatType; var i:integer );
+{continues with the animation}
+const Pi18 = Pi/18; //slowing the rotation
+begin
     Delay(25);
     PutAnim(110+Round(10*Sin(i*Pi18)),40+Round(10*Cos(i*Pi18)),anim,BkgPut);
     Inc(i);
     PutAnim(110+Round(10*Sin(i*Pi18)),40+Round(10*Cos(i*Pi18)),anim,TransPut);
     UpdateGraph(UpdateNow);
-  until CloseGraphRequest ;
-  FreeAnim(anim);
-  Finalise();
 end;
 
 procedure MenuButtons();
 {draws 3D menu buttons}
+var i,j : integer;
 begin
+j:= 0;
+for i:= 0 to 3 do
+begin
+  SetColor(colors[i]^);
+  SetFillStyle(SolidFill, colors[i]^);
+  Bar3D( 220,150+j, 420, 190+j, 6, true);
+  SetTextStyle(MSSansSerifFont,0,24);
+  SetColor(Black);
+  OutTextXY(320 - (TextWidth(word[i]) div 2) ,
+  					(170+j) - 12 ,word[i]);
+  j:= j + 65;
+end;
+end;
+
+function ProcessMouseEvents(var buttonPressed : boolean):integer;
+{Processes when clicked on a mouse button}
+var mouseEvent: MouseEventType;
+    x,y,i,j: integer;
+begin
+// remove the top mouse event of the queue
+	GetMouseEvent(mouseEvent);
+  if mouseEvent.buttons and MouseLeftButton <> 0 then
+  begin
+    // gets mouse's coordinates
+  	x:=GetMouseX();
+ 		y:=GetMouseY();
+    j:= 0;
+    for i := 0 to 3 do
+    begin
+      if (x >= 220) and (x <= 420) then
+      begin
+    		if (y >= 150+j) and (y <= 190+j) then   // if the right button was clicked
+        begin                                  // if the area of menu button
+          buttonPressed := true;
+          ProcessMouseEvents := j;
+          exit;
+        end
+      	else
+        begin
+          j:= j + 65;
+          buttonPressed := false;
+        end;
+      end;
+    end;
+  end;
+end;
+
+procedure ClearButton(j:integer);
+{clears the viewport of the menu button}
+begin
+	SetBkColor(FloralWhite);
+  SetViewPort(220,144+j,426,190+j, false);
+  ClearViewPort();
+  SetViewPort(0,0,0,0, false);
+end;
+
+procedure PressButton(j:integer);
+{clears the pressed button and draws new rectangle over it}
+var k: integer;
+begin
+k:= j div 65;
+SetFillStyle(SolidFill, colors[k]^);
+ClearButton(j);
+SetColor(colors[k]^);
+FillRect(226,144+j,426,184+j);
+SetTextStyle(MSSansSerifFont,0,24);
 SetColor(Black);
-SetFillStyle(SolidFill, Black);
-Bar3D( 220,150, 420, 190, 6, true);
+OutTextXY(326 - (TextWidth(word[k]) div 2) ,
+ 					(164+j) - 12 ,word[k]);
+end;
+procedure UnpressButton(j:integer);
+{clears the rectangle and draws new menu button over the area}
+var k:integer;
+begin
+k:= j div 65;
+ClearButton(j);
+SetColor(colors[k]^);
+Bar3D( 220,150+j, 420, 190+j, 6, true);
+SetTextStyle(MSSansSerifFont,0,24);
+SetColor(Black);
+OutTextXY(320 - (TextWidth(word[k]) div 2) ,
+ 					(170+j) - 12 ,word[k]);
 end;
 
 procedure Main();
+var mouseEvent: MouseEventType;
+    j,k : integer;
+    buttonStillPressed : boolean;
 begin
+i:= 0;
+k:=0;
+buttonStillPressed := false;
 Initialise();
 LoadFromFile('MINEZWEEPER-uvod.txt', true);
 MenuButtons();
-AnimateTitle();
+AnimateTitle(anim);
+while not CloseGraphRequest do
+begin
+	if PollMouseEvent(mouseEvent) then
+  begin
+  	j := ProcessMouseEvents(buttonPressed);
+    if buttonPressed then
+    begin
+      PressButton(j);
+      k:= j;
+      buttonStillPressed := true;
+      buttonPressed := false;
+    end;
+  end;
+  AnimateTitle2(anim, i);
+  if ((i mod 20) = 0) and buttonStillPressed then
+  begin
+  UnpressButton(k);
+  buttonStillPressed := false;
+  end;
+end;
+FreeAnim(anim);
+Finalise();
 end;
 
 begin
