@@ -84,7 +84,7 @@ Repeat
     begin
       //draws loaded text on window if the title is false
     i:= i + TextHeight(texttmp);
-    OutTextXY(0,i,texttmp);
+    OutTextXY(0,i+60,texttmp);
     end;
 until Eof(myfile);
 close(myfile);
@@ -200,24 +200,23 @@ OutTextXY(320 - (TextWidth(word[k]) div 2) ,
  					(170+j) - 12 ,word[k]);
 end;
 
-procedure Instructions();
-{for displaying Instructions in cleared graphics window, read from file}
-begin
-  SetBkColor(FloralWhite);
-  ClearDevice();
-  LoadFromFile('Instructions.txt', false);
-end;
-
-{procedure Back();
-var back, instruction: boolean;
+procedure Back();
+{for returning to main menu screen}
+var back: boolean;
     mouseEvent: MouseEventType;
     x,y : smallint;
 begin
-instruction := true;
 back := false;
+SetFillStyle(solidFill, Amethyst);
+SetLineStyle(NullLn,NormWidth,0);
+FillRect(0,0,50,50);
+SetTextStyle(ArialFont,0,25);
+SetColor(Black);
+OutTextXY(0, 0, 'BACK');
   while not back do
   begin
-      Instructions();
+    if closeGraphRequest then
+    	finalise();
     if (PollMouseEvent(mouseEvent)) then
     begin
       GetMouseEvent(mouseEvent);
@@ -228,11 +227,28 @@ back := false;
  				y:=GetMouseY();
         if (x > 0) and (x < 50) then
         	if (y > 0) and (y < 50) then
-        	back := true;
-    		end;
+          begin
+        		back := true;
+        		SetBkColor(FloralWhite);
+  					ClearDevice();
+						LoadFromFile('MINEZWEEPER-uvod.txt', true);
+						MenuButtons();
+						AnimateTitle(anim);
+          end;
+        end;
     end;
   end;
-end;  } //WTF ? vyresit at to uzq kurva funguje
+end;
+
+procedure Instructions();
+{for displaying Instructions in cleared graphics window, read from file}
+begin
+  SetBkColor(FloralWhite);
+  ClearDevice();
+  LoadFromFile('Instructions.txt', false);
+  UpdateGraph(UpdateOn);
+  Back();
+end;
 
 procedure StartGame();
 begin
@@ -275,10 +291,10 @@ begin
     case k of
     0: StartGame();
     //65: Difficulty();
-    {130: begin
-           FreeAnim(anim);
-           Back();
-  			 end;}
+    130: begin
+      		FreeAnim(anim);
+    			Instructions();
+  			 end;
     //195: Highscore();
     end;
   end;

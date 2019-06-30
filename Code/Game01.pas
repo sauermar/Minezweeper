@@ -1,5 +1,5 @@
 program Game01;
-uses wingraph, winmouse, wincrt;
+uses wingraph, winmouse, wincrt, sysutils;
 
 type
 		STATE = (closed,opened,flaged);
@@ -7,8 +7,8 @@ type
 var
     bitmaps: array [0..8] of pointer;
     ended: boolean;
-    rows, cols, count : smallint;
-    mines : string;
+    rows, cols, count,timeCount : smallint;
+    mines, seconds : string;
     grid: array[0..24, 0..16] of STATE; // player's visible grid
     grid2 : array [0..24, 0..16] of boolean; // game grid for mines
     grid3 : array [0..24, 0..16] of integer; // numbers around mines
@@ -41,7 +41,7 @@ procedure Initialise();
 var
   colourDepth, resolution, errcode,i,j, code : smallint;
   myFile : Text;
-  texttmp: string;
+  texttmp, timestring: string;
   begin
   //Open the Graphics Window
   colourDepth :=SVGA;
@@ -96,6 +96,10 @@ case cols of
    	grid[i,j] := closed;
     grid2[i,j] := false;
   end;
+
+  timeCount := 0;
+ 	timestring := Timetostr(Time);
+ 	seconds := timestring[7] + timestring[8];
 end;
 
 procedure Finalise();
@@ -112,6 +116,7 @@ begin
     FreeMem(bitmaps[8]);
     CloseGraph();
 end;
+
 procedure GameStatus(bitmap : pointer);
 {creates an emoji image for equivalent game progress}
 begin
@@ -195,22 +200,22 @@ begin
    	numberOfMines := 0;
    	if not grid2[i,j] then
     begin
-      if ((i-1) > 0) and ((j-1) > 0) then
+      if ((i-1) >= 0) and ((j-1) >= 0) then
 	      if grid2[i-1,j-1] then
   	    	inc(numberOfMines);
-      if ((j-1) > 0) then
+      if ((j-1) >= 0) then
 	      if grid2[i,j-1] then
   	    	inc(numberOfMines);
-      if ((j-1) > 0) and ((i+1) <= cols) then
+      if ((j-1) >= 0) and ((i+1) <= cols) then
       	if grid2[i+1,j-1] then
 	      	inc(numberOfMines);
-      if ((i-1) > 0) then
+      if ((i-1) >= 0) then
       	if grid2[i-1,j] then
       		inc(numberOfMines);
       if ((i+1) <= cols) then
       	if grid2[i+1,j] then
       		inc(numberOfMines);
-      if ((i-1) > 0) and ((j+1) <= rows) then
+      if ((i-1) >= 0) and ((j+1) <= rows) then
       	if grid2[i-1,j+1] then
       		inc(numberOfMines);
       if ((j+1) <= rows) then
@@ -226,7 +231,7 @@ begin
  end;
 end;
 
-procedure Timer();
+procedure Timer(seconds : string);
 {initialise timer on the right upper corner}
 begin
   SetFillStyle(solidFill, White);
@@ -234,7 +239,24 @@ begin
   FillRect(566,10,633,36);
   SetTextStyle(ArialFont,0,40);
 	SetColor(Red);
-  OutTextXY(571, 4, '000');
+  OutTextXY(571, 4, seconds);
+end;
+
+procedure ChangeTimer( seconds1 : string);
+var
+    timestring, help : string;
+    number1,number2, code : smallint;
+begin
+ timestring := Timetostr(Time);
+ seconds := timestring[7] + timestring[8];
+ Val(seconds,number1,code);
+ Val(seconds1,number2,code);
+ if number2 <> number1 then
+ 	begin
+  	inc(timeCount);
+    help := inttostr(timeCount);
+   	Timer(help);
+	end;
 end;
 
 procedure MineCounter();
@@ -275,7 +297,7 @@ begin
   end;
 end;
 
-procedure MineActivated(x,y,x1,y1 : smallint);
+procedure MineActivated(x,y : smallint);
 {graphics after uncovering a mine}
 var i,j : smallint;
 begin
@@ -314,7 +336,7 @@ begin
     end
   else
   begin
-  	if ((x1-1) > 0) and ((y1-1) > 0) and (grid[x1-1,y1-1] = closed) then
+  	if ((x1-1) >= 0) and ((y1-1) >= 0) and (grid[x1-1,y1-1] = closed) then
       begin
          x := ((x1-1)*25)+7;
          y := ((y1-1)*25)+50;
@@ -322,7 +344,7 @@ begin
     	 	 grid[x1-1,y1-1] := opened;
          DisplaySquare(x,y,x1-1,y1-1);
       end;
-    if ((y1-1) > 0) and (grid[x1,y1-1] = closed) then
+    if ((y1-1) >= 0) and (grid[x1,y1-1] = closed) then
       begin
         x := (x1*25)+7;
         y := ((y1-1)*25)+50;
@@ -330,7 +352,7 @@ begin
     	 	grid[x1,y1-1] := opened;
         DisplaySquare(x,y,x1,y1-1);
       end;
-    if ((y1-1) > 0) and ((x1+1) <= cols) and (grid[x1+1,y1-1] = closed) then
+    if ((y1-1) >= 0) and ((x1+1) <= cols) and (grid[x1+1,y1-1] = closed) then
        begin
        	x := ((x1+1)*25)+7;
         y := ((y1-1)*25)+50;
@@ -338,7 +360,7 @@ begin
     	 	grid[x1+1,y1-1] := opened;
         DisplaySquare(x,y,x1+1,y1-1);
        end;
-    if ((x1-1) > 0) and (grid[x1-1,y1] = closed) then
+    if ((x1-1) >= 0) and (grid[x1-1,y1] = closed) then
        begin
         x := ((x1-1)*25)+7;
         y := (y1*25)+50;
@@ -354,7 +376,7 @@ begin
     	 	grid[x1+1,y1] := opened;
         DisplaySquare(x,y,x1+1,y1);
        end;
-    if ((x1-1) > 0) and ((y1+1) <= rows) and (grid[x1-1,y1+1] = closed) then
+    if ((x1-1) >= 0) and ((y1+1) <= rows) and (grid[x1-1,y1+1] = closed) then
        begin
        	x := ((x1-1)*25)+7;
         y := ((y1+1)*25)+50;
@@ -401,12 +423,23 @@ begin
       	if (grid2[x1,y1]) then
       	begin
           ended := true;
-          MineActivated(x,y,x1,y1);
+          MineActivated(x,y);
           exit;
       	end;
         	OpenSquare(x,y);
      	 		grid[x1,y1] := opened;
           DisplaySquare(x,y,x1,y1);
+      end
+      else
+      begin
+      	x:=GetMouseX();
+				y:=GetMouseY();
+        if (x > 297) and (x < 343) then
+        	if (y > 1) and (y < 48) then
+          	begin
+              Closegraph();
+              executeprocess('Game01.exe',['']);
+            end;
       end;
       Delay(125);
       GameStatus(bitmaps[1]);
@@ -436,7 +469,7 @@ begin
 	Initialise();
   GameStatus(bitmaps[1]);
   MineCounter();
-	Timer();
+	Timer('0');
   CreateGrid();
   DistributeMines();
   NumbersAroundTiles();
@@ -451,6 +484,7 @@ begin
   	//until the game has ended ask for mouse events and process them
   	while not ended do
     begin
+      ChangeTimer(seconds);
       if CloseGraphRequest then
       	ended := true;
     	if PollMouseEvent(mouseEvent) then
