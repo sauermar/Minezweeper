@@ -1,6 +1,6 @@
 program Intro1;
 {Introductional part of the program with features described in specification}
-uses wingraph, wincrt, winmouse;
+uses wingraph, wincrt, winmouse, sysutils;
 
 var
     anim  : AnimatType;
@@ -48,13 +48,22 @@ var myFile : Text;
   	texttmp: string;
     i,j: integer;
 begin
-Randomize; //generate a new sequence of colors every time the program is run
-j:= Random(4);  //Get a random number between 0 and 4
-i:= 50; // y coordinate of displaying text
-setcolor(colors[j]^);
+if title = true then
+begin
+	Randomize; //generate a new sequence of colors every time the program is run
+	j:= Random(4);  //Get a random number between 0 and 4
+	i:= 50; // y coordinate of displaying text
+	setcolor(colors[j]^);
+  SetTextStyle(CourierNewFont,0,1);
+  end
+else
+begin
+	SetTextStyle(CourierNewFont,0,2);
+  setcolor(Black);
+  i:= 0;
+end;
 Assign(myFile, fileName);
 Reset(myFile);
-SetTextStyle(CourierNewFont,0,1);
 Repeat
   ReadLn(myFile, texttmp);
   if title=true then
@@ -70,7 +79,13 @@ Repeat
       else if i = 50 + (TextHeight(texttmp)*3) then
         setcolor(colors[(j+3) mod 5]^)
       else setcolor(colors[(j+4) mod 5]^);
-  	end;
+  	end
+  else if title = false then
+    begin
+      //draws loaded text on window if the title is false
+    i:= i + TextHeight(texttmp);
+    OutTextXY(0,i,texttmp);
+    end;
 until Eof(myfile);
 close(myfile);
 end;
@@ -133,7 +148,7 @@ begin
       if (x >= 220) and (x <= 420) then
       begin
     		if (y >= 150+j) and (y <= 190+j) then   // if the right button was clicked
-        begin                                  // if the area of menu button
+        begin                                  // in the area of menu button
           buttonPressed := true;
           ProcessMouseEvents := j;
           exit;
@@ -185,6 +200,46 @@ OutTextXY(320 - (TextWidth(word[k]) div 2) ,
  					(170+j) - 12 ,word[k]);
 end;
 
+procedure Instructions();
+{for displaying Instructions in cleared graphics window, read from file}
+begin
+  SetBkColor(FloralWhite);
+  ClearDevice();
+  LoadFromFile('Instructions.txt', false);
+end;
+
+{procedure Back();
+var back, instruction: boolean;
+    mouseEvent: MouseEventType;
+    x,y : smallint;
+begin
+instruction := true;
+back := false;
+  while not back do
+  begin
+      Instructions();
+    if (PollMouseEvent(mouseEvent)) then
+    begin
+      GetMouseEvent(mouseEvent);
+  			if mouseEvent.buttons and MouseLeftButton <> 0 then
+  			begin
+    		// gets mouse's coordinates
+  			x:=GetMouseX();
+ 				y:=GetMouseY();
+        if (x > 0) and (x < 50) then
+        	if (y > 0) and (y < 50) then
+        	back := true;
+    		end;
+    end;
+  end;
+end;  } //WTF ? vyresit at to uzq kurva funguje
+
+procedure StartGame();
+begin
+  Closegraph();
+  executeprocess('Game01.exe',['']);
+end;
+
 procedure Main();
 var mouseEvent: MouseEventType;
     j,k : integer;
@@ -197,8 +252,10 @@ Initialise();
 LoadFromFile('MINEZWEEPER-uvod.txt', true);
 MenuButtons();
 AnimateTitle(anim);
+//until the request for graphics window closing occurs
 while not CloseGraphRequest do
 begin
+  //checks if any mouse event occured
 	if PollMouseEvent(mouseEvent) then
   begin
   	j := ProcessMouseEvents(buttonPressed);
@@ -213,8 +270,17 @@ begin
   AnimateTitle2(anim, i);
   if ((i mod 20) = 0) and buttonStillPressed then
   begin
-  UnpressButton(k);
-  buttonStillPressed := false;
+  	UnpressButton(k);
+		buttonStillPressed := false;
+    case k of
+    0: StartGame();
+    //65: Difficulty();
+    {130: begin
+           FreeAnim(anim);
+           Back();
+  			 end;}
+    //195: Highscore();
+    end;
   end;
 end;
 FreeAnim(anim);
