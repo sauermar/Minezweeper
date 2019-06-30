@@ -7,7 +7,7 @@ type
 var
     bitmaps: array [0..10] of pointer;
     ended, startTime, first: boolean;
-    rows, cols, count,timeCount : smallint;
+    rows, cols, count,timeCount, c : smallint;
     mines, seconds : string;
     grid: array[0..24, 0..16] of STATE; // player's visible grid
     grid2 : array [0..24, 0..16] of boolean; // game grid for mines
@@ -39,13 +39,45 @@ procedure Initialise();
 {Initialises the Graphics Window
  also loads images and initialises grid array}
 var
-  colourDepth, resolution, errcode,i,j, code : smallint;
+  colourDepth, resolution, errcode,i,j: smallint;
   myFile : Text;
   texttmp, timestring: string;
   begin
+  // Reads number of rows and cols from the resolution of Menu application
+ Assign(myFile, 'MenuResolution.txt');
+ Reset(myFile);
+ ReadLn(myFile, texttmp);
+ Val(texttmp,cols);
+ ReadLn(myFile, texttmp);
+ Val(texttmp,rows);
+ close(myfile);
+
   //Open the Graphics Window
   colourDepth :=SVGA;
-  resolution  := m640x480;
+
+  //gets the apropriate resolution and counting number of mines
+  case cols of
+        24:
+          begin
+          resolution  := m640x480;
+          count := 89;
+          c := 298;
+          end;
+        15:
+          begin
+            SetWindowSize(415,455);
+         		resolution  := mCustom;
+            count := 39;
+            c := 185;
+        	end;
+        9: begin
+            SetWindowSize(265,305);
+         		resolution  := mCustom;
+            count := 9;
+            c := 110;
+        	end;
+  end;
+
   InitGraph(colourDepth,resolution,'Minezweeper');
 
   //Check for errors
@@ -69,21 +101,6 @@ var
   LoadStaticImage('grid16x16.bmp', 399, 400, bitmaps[9]);
   LoadStaticImage('grid10x10.bmp', 250, 250, bitmaps[10]);
 
-  // Reads number of rows and cols from the resolution of Menu application
-Assign(myFile, 'MenuResolution.txt');
-Reset(myFile);
-ReadLn(myFile, texttmp);
-Val(texttmp,cols,code);
-ReadLn(myFile, texttmp);
-Val(texttmp,rows,code);
-close(myfile);
-
-	//counting number of mines and the total number of tiles
-case cols of
-    24:count := 89;
-    15:count := 39;
-     8:count := 9;
-	end;
 
   //initialise 2D array (grid)
   for i:= 0 to cols do
@@ -126,7 +143,8 @@ end;
 procedure GameStatus(bitmap : pointer);
 {creates an emoji image for equivalent game progress}
 begin
-PutImage(298,2,bitmap^, NormalPut);
+//constant for first x coordinate of the gameStatus icon
+PutImage(c,2,bitmap^, NormalPut);
 end;
 
 procedure PressGameStatus();
@@ -135,7 +153,7 @@ begin
  SetColor(GrayAsparagus);
  SetFillStyle(solidFill, Gray);
  SetLineStyle(SolidLn,0,NormWidth);
- FillRect(298,2,343,47);
+ FillRect(c,2,c+45,47);
  Delay(40);
 end;
 
@@ -258,29 +276,36 @@ end;
 
 procedure Timer(seconds : string);
 {initialise and overwrites timer on the right upper corner}
+var x : smallint;
 begin
+case cols of
+     24: x := 566;
+     15: x := 341;
+     9: x := 191;
+     end;
   SetFillStyle(solidFill, White);
   SetLineStyle(NullLn,NormWidth,0);
-  FillRect(566,10,633,36);
+  FillRect(x,10,x+67,36);
   SetTextStyle(ArialFont,0,40);
 	SetColor(Red);
+
   if timeCount < 10 then
-  	OutTextXY(571, 4,'00' + seconds)
+  	OutTextXY(x+5, 4,'00' + seconds)
   else if timeCount < 100 then
-  	OutTextXY(571, 4,'0' + seconds)
+  	OutTextXY(x+5, 4,'0' + seconds)
     	else
-      OutTextXY(571, 4, seconds);
+      OutTextXY(x+5, 4, seconds);
 end;
 
 procedure ChangeTimer( seconds1 : string);
 var
     timestring, help : string;
-    number1,number2, code : smallint;
+    number1,number2 : smallint;
 begin
  timestring := Timetostr(Time);
  seconds := timestring[7] + timestring[8];
- Val(seconds,number1,code);
- Val(seconds1,number2,code);
+ Val(seconds,number1);
+ Val(seconds1,number2);
  if number2 <> number1 then
  	begin
   	inc(timeCount);
@@ -433,11 +458,42 @@ begin
   end;
 end;
 
+function IsGameWon(): boolean;
+{returns true if every mine was flaged, else returns false}
+var i,j: smallint;
+    win: boolean;
+begin
+win := true;
+for i := 0 to cols do
+begin
+	for j := 0 to rows do
+	begin
+    if (grid2[i,j]) and (grid[i,j] <> flaged) then
+				win:= false;
+  end;
+end;
+IsGameWon:= win;
+end;
+
+procedure ProcessWonGame();
+{creates the winning screen}
+var mess, mess1, score : string;
+begin
+  SetTextStyle(ArialFont,0,40);
+	SetColor(Yellow);
+
+	mess:='You Won';
+  mess1 := 'Score: ' + score ;
+  OutTextXY(c ,c,mess);
+  OutTextXY(c ,c+40,mess1);
+end;
+
 procedure ProcessMouseEvents();
 {handles mouse clicking}
 var
     mouseEvent : MouseEventType;
     x,y,x1,y1,i : smallint;
+    won : boolean;
 begin
  //remove the top mouse event of the queue
 	GetMouseEvent(mouseEvent);
@@ -451,29 +507,34 @@ begin
   // left button was pressed = reveal an empty square
   if mouseEvent.buttons and MouseLeftButton <> 0 then
   begin
+   //creates surprise face on GameStatus icon
       GameStatus(bitmaps[2]);
       if (x <> -1) and (y <> -1) and (grid[x1,y1] = closed) then
       begin
+        //when first square opens start the timer
         	if first then
       		begin
       			startTime := true;
         		first := false;
       		end;
+          //if mine was detected under opened square
       	if (grid2[x1,y1]) then
       	begin
           ended := true;
           MineActivated(x,y);
           exit;
       	end;
+        //if mine don't occur, then open square normally
         	OpenSquare(x,y);
      	 		grid[x1,y1] := opened;
           DisplaySquare(x,y,x1,y1);
       end
       else
+      //if it's clicked on GameStatus icon, restarts game
       begin
       	x:=GetMouseX();
 				y:=GetMouseY();
-        if (x > 297) and (x < 343) then
+        if (x >= c) and (x <= c+45) then
         	if (y > 1) and (y < 48) then
           	begin
               PressGameStatus();
@@ -488,16 +549,27 @@ begin
       Delay(125);
       GameStatus(bitmaps[1]);
   end
-  //right button was pressed = flag an empty square
+  //right button was pressed
   else if mouseEvent.buttons and MouseRightButton <> 0 then
   begin
+    // flag unreveiled square
   		if (x <> -1) and (y <> -1) and (grid[x1,y1] = closed) then
       	begin
         	Flag(x,y);
           grid[x1,y1] := flaged;
           ChangeMineNumber(false);
-
+          //checkes if all mines were flaged
+          if (count+1) = 0 then
+            begin
+            won := IsGameWon();
+            if won then
+              begin
+                ProcessWonGame();
+                ended := true;
+              end;
+            end;
         end
+      //unflag unreveiled square
       else if (x <> -1) and (y <> -1) and (grid[x1,y1] = flaged) then
       begin
       	UnFlag(x,y);
@@ -518,7 +590,7 @@ begin
   begin
     x:=GetMouseX();
 		y:=GetMouseY();
-    if (x > 297) and (x < 343) then
+    if (x >= c) and (x <= c+45) then
     	if (y > 1) and (y < 48) then
       begin
         PressGameStatus();

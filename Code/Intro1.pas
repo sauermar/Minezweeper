@@ -84,7 +84,7 @@ Repeat
     begin
       //draws loaded text on window if the title is false
     i:= i + TextHeight(texttmp);
-    OutTextXY(0,i+60,texttmp);
+    OutTextXY(5,i+50,texttmp);
     end;
 until Eof(myfile);
 close(myfile);
@@ -207,16 +207,17 @@ var back: boolean;
     x,y : smallint;
 begin
 back := false;
-SetFillStyle(solidFill, Amethyst);
+SetFillStyle(solidFill, Black);
 SetLineStyle(NullLn,NormWidth,0);
-FillRect(0,0,50,50);
+FillRect(45,19,120,45);
 SetTextStyle(ArialFont,0,25);
-SetColor(Black);
-OutTextXY(0, 0, 'BACK');
+SetColor(White);
+OutTextXY(50, 20, 'BACK');
+UpdateGraph(UpdateOn);
   while not back do
   begin
     if closeGraphRequest then
-    	finalise();
+    	closegraph();
     if (PollMouseEvent(mouseEvent)) then
     begin
       GetMouseEvent(mouseEvent);
@@ -225,15 +226,13 @@ OutTextXY(0, 0, 'BACK');
     		// gets mouse's coordinates
   			x:=GetMouseX();
  				y:=GetMouseY();
-        if (x > 0) and (x < 50) then
-        	if (y > 0) and (y < 50) then
+        if (x >44) and (x < 121) then
+        	if (y > 18) and (y < 46) then
           begin
         		back := true;
         		SetBkColor(FloralWhite);
   					ClearDevice();
-						LoadFromFile('MINEZWEEPER-uvod.txt', true);
 						MenuButtons();
-						AnimateTitle(anim);
           end;
         end;
     end;
@@ -248,6 +247,27 @@ begin
   LoadFromFile('Instructions.txt', false);
   UpdateGraph(UpdateOn);
   Back();
+end;
+
+procedure  Difficulty();
+var i,j : smallint;
+    word1: array [0..2] of string = ( 'Beginner','Intermediate','Expert');
+begin
+	SetBkColor(FloralWhite);
+  ClearDevice();
+  j:= 0;
+  //creates buttons with difficulty options
+	for i:= 0 to 2 do
+	begin
+  	SetColor(Black);
+  	SetFillStyle(SolidFill, Black);
+  	Bar3D( 220,150+j, 420, 190+j, 6, true);
+  	SetTextStyle(MSSansSerifFont,0,24);
+  	SetColor(White);
+  	OutTextXY(320 - (TextWidth(word1[i]) div 2) ,
+  					(170+j) - 12 ,word1[i]);
+  	j:= j + 65;
+	end;
 end;
 
 procedure StartGame();
@@ -289,12 +309,19 @@ begin
   	UnpressButton(k);
 		buttonStillPressed := false;
     case k of
-    0: StartGame();
-    //65: Difficulty();
-    130: begin
-      		FreeAnim(anim);
-    			Instructions();
-  			 end;
+    0:
+      begin
+        StartGame();
+        exit;
+      end;
+    65:
+      begin
+        Difficulty();
+      end;
+    130:
+      begin
+    		Instructions();
+  		end;
     //195: Highscore();
     end;
   end;
