@@ -2,11 +2,11 @@ program Game01;
 uses wingraph, winmouse, wincrt, sysutils;
 
 type
-		STATE = (closed,opened,flaged);
+		STATE = (opened,closed,flaged);
 
 var
-    bitmaps: array [0..8] of pointer;
-    ended: boolean;
+    bitmaps: array [0..10] of pointer;
+    ended, startTime, first: boolean;
     rows, cols, count,timeCount : smallint;
     mines, seconds : string;
     grid: array[0..24, 0..16] of STATE; // player's visible grid
@@ -63,9 +63,11 @@ var
   LoadStaticImage('bombface.bmp', 45, 45, bitmaps[3]);
   LoadStaticImage('wonface.bmp', 45, 45, bitmaps[4]);
   LoadStaticImage('square02.bmp', 25, 25, bitmaps[5]);
-  LoadStaticImage('grid.bmp', 625, 425, bitmaps[6]);
-  LoadStaticImage('mine.bmp', 25, 25, bitmaps[7]);
-  LoadStaticImage('mineA.bmp', 25, 25, bitmaps[8]);
+  LoadStaticImage('mine.bmp', 25, 25, bitmaps[6]);
+  LoadStaticImage('mineA.bmp', 25, 25, bitmaps[7]);
+  LoadStaticImage('grid.bmp', 625, 425, bitmaps[8]);
+  LoadStaticImage('grid16x16.bmp', 399, 400, bitmaps[9]);
+  LoadStaticImage('grid10x10.bmp', 250, 250, bitmaps[10]);
 
   // Reads number of rows and cols from the resolution of Menu application
 Assign(myFile, 'MenuResolution.txt');
@@ -78,28 +80,34 @@ close(myfile);
 
 	//counting number of mines and the total number of tiles
 case cols of
-    24: begin
-	     		count := 89;
-     		end;
-    15:	begin
-       		count := 39;
-     		end;
-     8: begin
-     			count := 9;
-       	end;
+    24:count := 89;
+    15:count := 39;
+     8:count := 9;
 	end;
 
   //initialise 2D array (grid)
   for i:= 0 to cols do
   begin
    for j:= 0 to rows do
+   begin
    	grid[i,j] := closed;
     grid2[i,j] := false;
+   end;
+  end;
+  for i := cols+1 to 24 do
+  begin
+  	for j := rows+1 to 16 do
+    begin
+     	grid[i,j] := opened;
+      grid2[i,j] := false;
+    end;
   end;
 
-  timeCount := 0;
+  timeCount := -1;
  	timestring := Timetostr(Time);
  	seconds := timestring[7] + timestring[8];
+
+  first := true;
 end;
 
 procedure Finalise();
@@ -108,12 +116,10 @@ procedure Finalise();
 var i: smallint;
 begin
 	repeat until CloseGraphRequest;
-    for i := 0 to 5 do
+    for i := 0 to 7 do
     begin
       FreeMem(bitmaps[i]);
     end;
-    FreeMem(bitmaps[7]);
-    FreeMem(bitmaps[8]);
     CloseGraph();
 end;
 
@@ -123,43 +129,62 @@ begin
 PutImage(298,2,bitmap^, NormalPut);
 end;
 
-procedure DistributeMines();
+procedure PressGameStatus();
+{creates pressed gameStatus icon}
+begin
+ SetColor(GrayAsparagus);
+ SetFillStyle(solidFill, Gray);
+ SetLineStyle(SolidLn,0,NormWidth);
+ FillRect(298,2,343,47);
+ Delay(40);
+end;
+
+procedure DistributeMines(count1:smallint);
 {for random distribution of mines over the specified game grid}
 var i, j, k, count2: smallint;
 begin
-  count2 := count;
+  count2 := -1;
   Randomize; { This way we generate a new sequence every time
                  the program is run}
-  for k := 0 to count2 do
+  for k := 0 to count1 do
   begin
     i := random (cols);
     j := random (rows);
-    if not grid2 [i,j] then
+    if not grid2[i,j] then
     begin
 		  grid2[i,j] := true; // Place Mine
     end
 	  else inc(count2); // if colision occurs, then try again
   end;
+
+  if count2 <> -1 then
+  	DistributeMines(count2);
 end;
 
 procedure CreateGrid();
 {Creates a game's grid from given image}
+var i : smallint;
 begin
 // Draws image on Graphics Window with given coordinates
-PutImage(7,50,bitmaps[6]^,NormalPut);
-FreeMem(bitmaps[6]);
+case cols of
+     24 : PutImage(7,50,bitmaps[8]^,NormalPut);
+     15 : PutImage(7,50,bitmaps[9]^,NormalPut);
+     9 : PutImage(7,50,bitmaps[10]^,NormalPut);
+end;
+for i := 8 to 10 do
+	FreeMem(bitmaps[i]);
 end;
 
-procedure GetCoordinates(var x,y : smallint);
+procedure GetCoordinates(var x,y : smallint; maxX,maxY: smallint);
 {gets the coordinates of the top left corner of the square,
 upon which has been currently mouse button pressed}
 begin
  x:=GetMouseX();
  y:=GetMouseY();
- if (x > 6) and (x < 633) then   //width of grid
+ if (x > 6) and (x < maxX) then   //width of grid
    	x := (((x - 7) div 25) * 25) + 7
  else x := -1;
- if (y > 49) and (y < 476) then   //length of grid
+ if (y > 49) and (y < maxY) then   //length of grid
    	y := (((y - 50)div 25) * 25) + 50
  else y := -1;
 end;
@@ -232,14 +257,19 @@ begin
 end;
 
 procedure Timer(seconds : string);
-{initialise timer on the right upper corner}
+{initialise and overwrites timer on the right upper corner}
 begin
   SetFillStyle(solidFill, White);
   SetLineStyle(NullLn,NormWidth,0);
   FillRect(566,10,633,36);
   SetTextStyle(ArialFont,0,40);
 	SetColor(Red);
-  OutTextXY(571, 4, seconds);
+  if timeCount < 10 then
+  	OutTextXY(571, 4,'00' + seconds)
+  else if timeCount < 100 then
+  	OutTextXY(571, 4,'0' + seconds)
+    	else
+      OutTextXY(571, 4, seconds);
 end;
 
 procedure ChangeTimer( seconds1 : string);
@@ -307,10 +337,10 @@ begin
    for j := 0 to rows do
    begin
     if (grid2[i,j]) then
-   		PutImage((i*25)+7,(j*25)+50,bitmaps[7]^,NormalPut);
+   		PutImage((i*25)+7,(j*25)+50,bitmaps[6]^,NormalPut);
    end;
   end;
-  PutImage(x,y,bitmaps[8]^,NormalPut);
+  PutImage(x,y,bitmaps[7]^,NormalPut);
 end;
 
 procedure DisplaySquare(x,y,x1,y1 : smallint);
@@ -407,19 +437,28 @@ procedure ProcessMouseEvents();
 {handles mouse clicking}
 var
     mouseEvent : MouseEventType;
-    x,y,x1,y1 : smallint;
+    x,y,x1,y1,i : smallint;
 begin
  //remove the top mouse event of the queue
 	GetMouseEvent(mouseEvent);
-  GetCoordinates(x,y);
+  case cols of
+       24:GetCoordinates(x,y,633,476);
+       15:GetCoordinates(x,y,408,451);
+        9:GetCoordinates(x,y,258,301);
+  end;
   x1:= (x - 7)div 25;
   y1:= (y - 50)div 25;
   // left button was pressed = reveal an empty square
   if mouseEvent.buttons and MouseLeftButton <> 0 then
   begin
-     	GameStatus(bitmaps[2]);
+      GameStatus(bitmaps[2]);
       if (x <> -1) and (y <> -1) and (grid[x1,y1] = closed) then
       begin
+        	if first then
+      		begin
+      			startTime := true;
+        		first := false;
+      		end;
       	if (grid2[x1,y1]) then
       	begin
           ended := true;
@@ -437,6 +476,11 @@ begin
         if (x > 297) and (x < 343) then
         	if (y > 1) and (y < 48) then
           	begin
+              PressGameStatus();
+              for i := 0 to 7 do
+              begin
+                FreeMem(bitmaps[i]);
+              end;
               Closegraph();
               executeprocess('Game01.exe',['']);
             end;
@@ -463,6 +507,31 @@ begin
   end;
 end;
 
+procedure ProcessMouseEventsAfterTheGameHasEnded();
+{enables to start a new game after lost or won one
+ by clicking on the gameStatus icon}
+var mouseEvent : MouseEventType;
+    x,y,i : smallint;
+begin
+  GetMouseEvent(mouseEvent);
+  if mouseEvent.buttons and MouseLeftButton <> 0 then
+  begin
+    x:=GetMouseX();
+		y:=GetMouseY();
+    if (x > 297) and (x < 343) then
+    	if (y > 1) and (y < 48) then
+      begin
+        PressGameStatus();
+        for i := 0 to 7 do
+      	begin
+        	FreeMem(bitmaps[i]);
+      	end;
+      	Closegraph();
+      	executeprocess('Game01.exe',['']);
+      end;
+  end;
+end;
+
 procedure Load();
 //loads initial structures and procedures for the game
 begin
@@ -471,7 +540,7 @@ begin
   MineCounter();
 	Timer('0');
   CreateGrid();
-  DistributeMines();
+  DistributeMines(count);
   NumbersAroundTiles();
 end;
 
@@ -480,17 +549,28 @@ var
   mouseEvent : MouseEventType;
 begin
  	ended := false;
+  startTime := false;
   Load();
   	//until the game has ended ask for mouse events and process them
   	while not ended do
     begin
-      ChangeTimer(seconds);
+     if (timeCount < 1000) and startTime then
+      	ChangeTimer(seconds);
       if CloseGraphRequest then
       	ended := true;
     	if PollMouseEvent(mouseEvent) then
       begin
     		ProcessMouseEvents();
       end;
+    end;
+    while ended do
+    begin
+       if CloseGraphRequest then
+      	ended := false;
+       if PollMouseEvent(mouseEvent) then
+      	begin
+    			ProcessMouseEventsAfterTheGameHasEnded();
+      	end;
     end;
     finalise();
 end;
