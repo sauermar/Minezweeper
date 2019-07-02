@@ -5,7 +5,7 @@ type
 		STATE = (opened,closed,flaged);
 
 var
-    bitmaps: array [0..10] of pointer;
+    bitmaps: array [0..11] of pointer;
     ended, startTime, first: boolean;
     rows, cols, count,timeCount, c : smallint;
     mines, seconds : string;
@@ -42,7 +42,7 @@ var
   colourDepth, resolution, errcode,i,j: smallint;
   myFile : Text;
   texttmp, timestring: string;
-  begin
+begin
   // Reads number of rows and cols from the resolution of Menu application
  Assign(myFile, 'MenuResolution.txt');
  Reset(myFile);
@@ -97,9 +97,10 @@ var
   LoadStaticImage('square02.bmp', 25, 25, bitmaps[5]);
   LoadStaticImage('mine.bmp', 25, 25, bitmaps[6]);
   LoadStaticImage('mineA.bmp', 25, 25, bitmaps[7]);
-  LoadStaticImage('grid.bmp', 625, 425, bitmaps[8]);
-  LoadStaticImage('grid16x16.bmp', 399, 400, bitmaps[9]);
-  LoadStaticImage('grid10x10.bmp', 250, 250, bitmaps[10]);
+  LoadStaticImage('menu.bmp', 40, 30, bitmaps[8]);
+  LoadStaticImage('grid.bmp', 625, 425, bitmaps[9]);
+  LoadStaticImage('grid16x16.bmp', 399, 400, bitmaps[10]);
+  LoadStaticImage('grid10x10.bmp', 250, 250, bitmaps[11]);
 
 
   //initialise 2D array (grid)
@@ -133,11 +134,17 @@ procedure Finalise();
 var i: smallint;
 begin
 	repeat until CloseGraphRequest;
-    for i := 0 to 7 do
+    for i := 0 to 8 do
     begin
       FreeMem(bitmaps[i]);
     end;
     CloseGraph();
+end;
+
+procedure Menu();
+{creates an image for going back to menu option}
+begin
+PutImage(c-40,9,bitmaps[8]^, NormalPut);
 end;
 
 procedure GameStatus(bitmap : pointer);
@@ -145,6 +152,16 @@ procedure GameStatus(bitmap : pointer);
 begin
 //constant for first x coordinate of the gameStatus icon
 PutImage(c,2,bitmap^, NormalPut);
+end;
+
+procedure PressMenu();
+{creates pressed Menu icon}
+begin
+ SetColor(GrayAsparagus);
+ SetFillStyle(solidFill, Gray);
+ SetLineStyle(SolidLn,0,NormWidth);
+ FillRect(c-40,9,c,39);
+ Delay(40);
 end;
 
 procedure PressGameStatus();
@@ -185,11 +202,11 @@ var i : smallint;
 begin
 // Draws image on Graphics Window with given coordinates
 case cols of
-     24 : PutImage(7,50,bitmaps[8]^,NormalPut);
-     15 : PutImage(7,50,bitmaps[9]^,NormalPut);
-     9 : PutImage(7,50,bitmaps[10]^,NormalPut);
+     24 : PutImage(7,50,bitmaps[9]^,NormalPut);
+     15 : PutImage(7,50,bitmaps[10]^,NormalPut);
+     9 : PutImage(7,50,bitmaps[11]^,NormalPut);
 end;
-for i := 8 to 10 do
+for i := 9 to 11 do
 	FreeMem(bitmaps[i]);
 end;
 
@@ -534,17 +551,29 @@ begin
       begin
       	x:=GetMouseX();
 				y:=GetMouseY();
-        if (x >= c) and (x <= c+45) then
-        	if (y > 1) and (y < 48) then
+        if ((x >= c) and (x <= c+45)) and ((y > 1) and (y < 48)) then
           	begin
               PressGameStatus();
-              for i := 0 to 7 do
+              for i := 0 to 8 do
               begin
                 FreeMem(bitmaps[i]);
               end;
               Closegraph();
               executeprocess('Game01.exe',['']);
-            end;
+              exit;
+            end
+        // or when it's clicked on Menu button, it goes back to menu
+      	else if ((x > c-41) and (x < c)) and ((y > 8) and (y < 40)) then
+         begin
+            PressMenu();
+            for i := 0 to 8 do
+      	   begin
+        	   FreeMem(bitmaps[i]);
+      	   end;
+      	   Closegraph();
+      	   executeprocess('Intro1.exe',['']);
+           exit;
+         end;
       end;
       Delay(125);
       GameStatus(bitmaps[1]);
@@ -590,16 +619,29 @@ begin
   begin
     x:=GetMouseX();
 		y:=GetMouseY();
-    if (x >= c) and (x <= c+45) then
-    	if (y > 1) and (y < 48) then
-      begin
+    //if it's clicked on GameStatus icon, restarts game
+    if ((x >= c) and (x <= c+45)) and ((y > 1) and (y < 48)) then
+    begin
         PressGameStatus();
-        for i := 0 to 7 do
+        for i := 0 to 8 do
       	begin
         	FreeMem(bitmaps[i]);
       	end;
       	Closegraph();
       	executeprocess('Game01.exe',['']);
+        exit;
+      end
+    //or when it's clicked on Menu button, it goes back to menu
+    else if ((x > c-41) and (x < c)) and ((y > 8) and (y < 40)) then
+      begin
+         PressMenu();
+         for i := 0 to 8 do
+      	begin
+        	FreeMem(bitmaps[i]);
+      	end;
+      	Closegraph();
+      	executeprocess('Intro1.exe',['']);
+        exit;
       end;
   end;
 end;
@@ -609,6 +651,7 @@ procedure Load();
 begin
 	Initialise();
   GameStatus(bitmaps[1]);
+  Menu();
   MineCounter();
 	Timer('0');
   CreateGrid();
