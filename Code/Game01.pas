@@ -6,7 +6,7 @@ type
 
 var
     bitmaps: array [0..11] of pointer;
-    ended, startTime, first: boolean;
+    ended, startTime, first, ex: boolean;
     rows, cols, count,timeCount, c : smallint;
     mines, seconds : string;
     grid: array[0..24, 0..16] of STATE; // player's visible grid
@@ -126,6 +126,7 @@ begin
  	seconds := timestring[7] + timestring[8];
 
   first := true;
+  ex := false;
 end;
 
 procedure Finalise();
@@ -558,9 +559,9 @@ begin
               begin
                 FreeMem(bitmaps[i]);
               end;
+              ex := true;
               Closegraph();
               executeprocess('Game01.exe',['']);
-              exit;
             end
         // or when it's clicked on Menu button, it goes back to menu
       	else if ((x > c-41) and (x < c)) and ((y > 8) and (y < 40)) then
@@ -572,7 +573,6 @@ begin
       	   end;
       	   Closegraph();
       	   executeprocess('Intro1.exe',['']);
-           exit;
          end;
       end;
       Delay(125);
@@ -627,9 +627,9 @@ begin
       	begin
         	FreeMem(bitmaps[i]);
       	end;
+        ex := true;
       	Closegraph();
       	executeprocess('Game01.exe',['']);
-        exit;
       end
     //or when it's clicked on Menu button, it goes back to menu
     else if ((x > c-41) and (x < c)) and ((y > 8) and (y < 40)) then
@@ -641,7 +641,6 @@ begin
       	end;
       	Closegraph();
       	executeprocess('Intro1.exe',['']);
-        exit;
       end;
   end;
 end;
@@ -676,6 +675,7 @@ begin
     	if PollMouseEvent(mouseEvent) then
       begin
     		ProcessMouseEvents();
+        //if ex then exit;
       end;
     end;
     while ended do
@@ -685,6 +685,7 @@ begin
        if PollMouseEvent(mouseEvent) then
       	begin
     			ProcessMouseEventsAfterTheGameHasEnded();
+          //if ex then exit;
       	end;
     end;
     finalise();

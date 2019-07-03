@@ -8,6 +8,7 @@ var
     colors: array [0..4] of ^longword = ( @red,@orange,@green,@Blue,@Purple);
     word: array [0..3] of string = ( 'Start Game','Difficulty',
     																	'Instructions','Highscore');
+    word1: array [0..2] of string = ( 'Beginner','Intermediate','Expert');
     buttonPressed : boolean;
 
 procedure Initialise();
@@ -89,6 +90,7 @@ Repeat
 until Eof(myfile);
 close(myfile);
 end;
+
 procedure AnimateTitle(var anim: AnimatType);
 {creates a rotation animation of the title}
 const  width = 500;
@@ -101,6 +103,7 @@ begin
   Delay(500);
   UpdateGraph(UpdateOff); //used to reduce flickering
 end;
+
 procedure AnimateTitle2(anim: AnimatType; var i:integer );
 {continues with the animation}
 const Pi18 = Pi/18; //slowing the rotation
@@ -172,20 +175,42 @@ begin
   SetViewPort(0,0,0,0, false);
 end;
 
-procedure PressButton(j:integer);
+procedure PressButton(j:integer; menu:boolean);
 {clears the pressed button and draws new rectangle over it}
 var k: integer;
 begin
 k:= j div 65;
-SetFillStyle(SolidFill, colors[k]^);
+if menu then
+	begin
+    SetFillStyle(SolidFill, colors[k]^);
+    SetColor(colors[k]^);
+	end
+else
+	begin
+	  SetFillStyle(SolidFill, Black);
+	  SetColor(Black);
+	end;
+
 ClearButton(j);
-SetColor(colors[k]^);
 FillRect(226,144+j,426,184+j);
-SetTextStyle(MSSansSerifFont,0,24);
-SetColor(Black);
-OutTextXY(326 - (TextWidth(word[k]) div 2) ,
- 					(164+j) - 12 ,word[k]);
+
+if menu then
+	begin
+    SetTextStyle(MSSansSerifFont,0,24);
+    SetColor(Black);
+    OutTextXY(326 - (TextWidth(word[k]) div 2) ,
+ 					  (164+j) - 12 ,word[k]);
+	end
+else
+	begin
+  	SetTextStyle(MSSansSerifFont,0,24);
+  	SetColor(White);
+  	OutTextXY(320 - (TextWidth(word1[k]) div 2) ,
+  					(170+j) - 12 ,word1[k]);
+    delay(100);
+	end;
 end;
+
 procedure UnpressButton(j:integer);
 {clears the rectangle and draws new menu button over the area}
 var k:integer;
@@ -200,6 +225,37 @@ OutTextXY(320 - (TextWidth(word[k]) div 2) ,
  					(170+j) - 12 ,word[k]);
 end;
 
+procedure DrawBack();
+var size: longint;
+    f     : file;
+    bitmap : pointer;
+begin
+ //returns the number of bytes needed to store the image
+	size:=ImageSize(1,1,69,45);
+ //reserves Size bytes memory on the heap, and returns a pointer to this memory
+  GetMem(bitmap,size);
+  {$I-} Assign(f,'back.bmp'); Reset(f,1); {$I+}
+ //checks for error
+  if (IOResult <> 0) or (FileSize(f) <> size) then
+   begin
+     writeln('Error: unable to load image file.');
+     Exit;
+   end;
+  //load the image into reserved memory
+  BlockRead(f,bitmap^,size);
+  Close(f);
+  // Draws an image onto the window
+  //x,y are coordinates of the left upper corner
+  PutImage(0,0,bitmap^, NormalPut);
+end;
+
+procedure BackToMainMenuGraphics();
+begin
+SetBkColor(FloralWhite);
+ClearDevice();
+MenuButtons();
+end;
+
 procedure Back();
 {for returning to main menu screen}
 var back: boolean;
@@ -207,14 +263,7 @@ var back: boolean;
     x,y : smallint;
 begin
 back := false;
-SetFillStyle(solidFill, Black);
-SetLineStyle(NullLn,NormWidth,0);
-FillRect(45,19,120,45);
-SetTextStyle(ArialFont,0,25);
-SetColor(White);
-OutTextXY(50, 20, 'BACK');
-UpdateGraph(UpdateOn);
-  while not back do
+while not back do
   begin
     if closeGraphRequest then
     	closegraph();
@@ -226,13 +275,11 @@ UpdateGraph(UpdateOn);
     		// gets mouse's coordinates
   			x:=GetMouseX();
  				y:=GetMouseY();
-        if (x >44) and (x < 121) then
-        	if (y > 18) and (y < 46) then
+        if (x >-1) and (x < 70) then
+        	if (y > -1) and (y < 46) then
           begin
         		back := true;
-        		SetBkColor(FloralWhite);
-  					ClearDevice();
-						MenuButtons();
+        		BackToMainMenuGraphics()
           end;
         end;
     end;
@@ -245,13 +292,15 @@ begin
   SetBkColor(FloralWhite);
   ClearDevice();
   LoadFromFile('Instructions.txt', false);
+  DrawBack();
   UpdateGraph(UpdateOn);
   Back();
 end;
 
 procedure  Difficulty();
 var i,j : smallint;
-    word1: array [0..2] of string = ( 'Beginner','Intermediate','Expert');
+    mouseEvent: MouseEventType;
+    diffset : boolean = false;
 begin
 	SetBkColor(FloralWhite);
   ClearDevice();
@@ -268,6 +317,26 @@ begin
   					(170+j) - 12 ,word1[i]);
   	j:= j + 65;
 	end;
+
+  UpdateGraph(UpdateOn); //used for updating graphics
+
+  //cycle for pressing one of the difficulty buttons
+  //and setuping the difficulty through text file
+  while not diffset do
+    begin
+      if PollMouseEvent(mouseEvent) then
+  		begin
+  			j := ProcessMouseEvents(buttonPressed);
+    	end;
+      if buttonPressed then
+    	begin
+      	PressButton(j, false);
+        buttonPressed := false;
+        diffset := true;
+        BackToMainMenuGraphics()
+    	end;
+    end;
+
 end;
 
 procedure StartGame();
@@ -297,7 +366,7 @@ begin
   	j := ProcessMouseEvents(buttonPressed);
     if buttonPressed then
     begin
-      PressButton(j);
+      PressButton(j, true);
       k:= j;
       buttonStillPressed := true;
       buttonPressed := false;
