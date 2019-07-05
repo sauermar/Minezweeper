@@ -1,13 +1,16 @@
 program Game01;
+{$APPTYPE GUI}
 uses wingraph, winmouse, wincrt, sysutils;
 
 type
 		STATE = (opened,closed,flaged);
 
 var
+
     bitmaps: array [0..11] of pointer;
     ended, startTime, first, ex: boolean;
-    rows, cols, count,timeCount, c : smallint;
+    rows, cols, count, c : smallint;
+    timeCount : integer;
     mines, seconds : string;
     grid: array[0..24, 0..16] of STATE; // player's visible grid
     grid2 : array [0..24, 0..16] of boolean; // game grid for mines
@@ -493,17 +496,103 @@ end;
 IsGameWon:= win;
 end;
 
+procedure UpdateHighScore(j : smallint; score: string);
+var oldfile: TextFile;
+    newfile: TextFile;
+    line: string[100]; // long enough to hold the longest line in the file
+    i: word; // counter for the lines
+    name : string;
+begin
+name := '';
+
+AssignFile(oldfile, 'Highscore.txt');
+AssignFile(newfile, 'Highscore(1).txt'); // create new file
+
+Reset(oldfile);
+Rewrite(newfile); // open the new file for writing
+
+i := 0;
+
+while not eof(oldfile) do begin
+    readln(oldfile, line);
+    if (i = j+1) then
+        writeln(newfile, name + ': ' + score)
+    else
+        writeln(newfile, line);
+    i := i + 1;
+end;
+
+Close(oldfile);
+Close(newfile);
+
+Erase(oldfile);
+Rename(newfile, 'Highscore.txt');
+
+end;
+
+function GetHighScore(i : smallint): string;
+var tf:TextFile;
+    j,k : smallint;
+    texttmp, high : string;
+begin
+  AssignFile(tf, 'Highscore.txt');
+  Reset (tf);
+  for j := 0 to i do
+    readln(tf);
+
+  readln(tf,texttmp);
+  high := '';
+  for j := 0 to length(texttmp) do
+  begin
+    if texttmp[j] = ':' then
+      begin
+       for k := j+2 to length(texttmp) do
+        high := high + texttmp[k];
+       break;
+      end;
+  end;
+
+  CloseFile(tf);
+
+  GetHighScore := high;
+end;
+
 procedure ProcessWonGame();
 {creates the winning screen}
-var mess, mess1, score : string;
+var mess, mess1, score, highsc , mess2: string;
+    i, best : smallint;
 begin
+  GameStatus(bitmaps[4]);
+  case cols of
+       9: i := 0;
+       15 : i := 2;
+       24 : i:= 4;
+       end;
+  highsc := GetHighScore(i);
+  str(Timecount,score);
+
+  Val(highsc,best);
+  if best > timecount then
+    begin
+     highsc := score;
+     UpdateHighScore(i, score);
+    end;
+
+  SetFillStyle(XHatchFill, grayAsparagus);
+  FillRect(7,50,(25*(cols+1))+7,(25*(rows+1))+50);
+
   SetTextStyle(ArialFont,0,40);
 	SetColor(Yellow);
 
 	mess:='You Won';
   mess1 := 'Score: ' + score ;
-  OutTextXY(c ,c,mess);
-  OutTextXY(c ,c+40,mess1);
+  mess2 := 'Best: ' + highsc;
+  OutTextXY(c-55 ,c-40,mess);
+  OutTextXY(c-55 ,c,mess1);
+	OutTextXY(c-55 ,c+40,mess2);
+
+
+
 end;
 
 procedure ProcessMouseEvents();
@@ -559,7 +648,7 @@ begin
               begin
                 FreeMem(bitmaps[i]);
               end;
-              ex := true;
+              ex:= true;
               Closegraph();
               executeprocess('Game01.exe',['']);
             end
@@ -571,6 +660,7 @@ begin
       	   begin
         	   FreeMem(bitmaps[i]);
       	   end;
+            ex := true;
       	   Closegraph();
       	   executeprocess('Intro1.exe',['']);
          end;
@@ -639,6 +729,7 @@ begin
       	begin
         	FreeMem(bitmaps[i]);
       	end;
+         ex := true;
       	Closegraph();
       	executeprocess('Intro1.exe',['']);
       end;
@@ -675,7 +766,7 @@ begin
     	if PollMouseEvent(mouseEvent) then
       begin
     		ProcessMouseEvents();
-        //if ex then exit;
+        if ex then exit;
       end;
     end;
     while ended do
@@ -685,7 +776,7 @@ begin
        if PollMouseEvent(mouseEvent) then
       	begin
     			ProcessMouseEventsAfterTheGameHasEnded();
-          //if ex then exit;
+          if ex then exit;
       	end;
     end;
     finalise();

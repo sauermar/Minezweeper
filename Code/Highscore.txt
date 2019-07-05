@@ -1,6 +1,6 @@
 Beginner
-Ryba : 256
+Kocka: 138
 Intermediate
-Rajba : 564
+Rajba: 564
 Expert
-Zajda : 800
+Zajda: 800

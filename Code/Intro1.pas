@@ -1,4 +1,5 @@
 program Intro1;
+{$APPTYPE GUI}
 {Introductional part of the program with features described in specification}
 uses wingraph, wincrt, winmouse, sysutils;
 
@@ -62,7 +63,7 @@ else if fileName = 'Instructions.txt' then
 		SetTextStyle(CourierNewFont,0,2);
   	setcolor(Black);
   	i:= 0;
-    m:= 5;
+    m:= 10;
 	end
 else
 	begin
@@ -278,6 +279,7 @@ SetTextStyle(MSSansSerifFont,0,24);
 SetColor(Black);
 OutTextXY(320 - (TextWidth(word[k]) div 2) ,
  					(170+j) - 12 ,word[k]);
+UpdateGraph(UpdateOn);
 end;
 
 procedure DrawBack();
