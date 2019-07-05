@@ -789,6 +789,8 @@ begin
     finalise();
 end;
 
+{$R *.res}
+
 begin
   Main();
 end.

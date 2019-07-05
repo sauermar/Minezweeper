@@ -6,6 +6,9 @@ uses  wingraph, wincrt;
 var  colourDepth, resolution, errcode: smallint;
   	 name : shortstring;
      namefile: Textfile;
+
+{$R *.res}
+
 begin
 //initialise graphics window with custom width and height
   colourDepth :=SVGA;

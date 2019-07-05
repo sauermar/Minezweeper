@@ -474,6 +474,8 @@ FreeAnim(anim);
 Finalise();
 end;
 
+{$R *.res}
+
 begin
   Main();
 end.

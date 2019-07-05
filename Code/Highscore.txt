@@ -1,6 +1,6 @@
 Beginner
-Rybusicka: 39
+Rubby: 239
 Intermediate
-Market: 323
+Market: 523
 Expert
 Zajda: 800
