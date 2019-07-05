@@ -1,6 +1,6 @@
 Beginner
-Kocka: 138
+Rybusicka: 39
 Intermediate
-Rajba: 564
+Market: 323
 Expert
 Zajda: 800

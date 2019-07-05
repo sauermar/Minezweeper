@@ -11,7 +11,7 @@ var
     ended, startTime, first, ex: boolean;
     rows, cols, count, c : smallint;
     timeCount : integer;
-    mines, seconds : string;
+    mines, seconds: string;
     grid: array[0..24, 0..16] of STATE; // player's visible grid
     grid2 : array [0..24, 0..16] of boolean; // game grid for mines
     grid3 : array [0..24, 0..16] of integer; // numbers around mines
@@ -497,13 +497,20 @@ IsGameWon:= win;
 end;
 
 procedure UpdateHighScore(j : smallint; score: string);
-var oldfile: TextFile;
-    newfile: TextFile;
+var oldfile, newfile, namefile: TextFile;
     line: string[100]; // long enough to hold the longest line in the file
     i: word; // counter for the lines
-    name : string;
+    name : shortstring;
 begin
 name := '';
+
+executeprocess('NameWindow.exe',['']);
+AssignFile(namefile, 'name.txt');
+Reset(namefile);
+Readln(namefile, name);
+CloseFile(namefile);
+
+Erase(namefile);
 
 AssignFile(oldfile, 'Highscore.txt');
 AssignFile(newfile, 'Highscore(1).txt'); // create new file
