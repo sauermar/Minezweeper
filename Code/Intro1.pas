@@ -47,48 +47,103 @@ procedure LoadFromFile(fileName:string; title: boolean);
  and displays it on Graphics window}
 var myFile : Text;
   	texttmp: string;
-    i,j: integer;
+    i,j,m: integer;
 begin
 if title = true then
-begin
-	Randomize; //generate a new sequence of colors every time the program is run
-	j:= Random(4);  //Get a random number between 0 and 4
-	i:= 50; // y coordinate of displaying text
-	setcolor(colors[j]^);
-  SetTextStyle(CourierNewFont,0,1);
+	begin
+		Randomize; //generate a new sequence of colors every time the program is run
+		j:= Random(4);  //Get a random number between 0 and 4
+		i:= 50; // y coordinate of displaying text
+		setcolor(colors[j]^);
+  	SetTextStyle(CourierNewFont,0,1);
   end
+else if fileName = 'Instructions.txt' then
+	begin
+		SetTextStyle(CourierNewFont,0,2);
+  	setcolor(Black);
+  	i:= 0;
+    m:= 5;
+	end
 else
-begin
-	SetTextStyle(CourierNewFont,0,2);
-  setcolor(Black);
-  i:= 0;
-end;
-Assign(myFile, fileName);
-Reset(myFile);
-Repeat
-  ReadLn(myFile, texttmp);
-  if title=true then
-  	begin
-      //draws loaded text on window if the title is true
-			OutTextXY(125,i,texttmp);
-  		i:= i + TextHeight(texttmp);
-      //changing colors of every line
-      if i = 50 + TextHeight(texttmp) then
-      	setcolor(colors[(j+1) mod 5]^ )
-      else if i = 50 + (TextHeight(texttmp)*2) then
-        setcolor(colors[(j+2) mod 5]^)
-      else if i = 50 + (TextHeight(texttmp)*3) then
-        setcolor(colors[(j+3) mod 5]^)
-      else setcolor(colors[(j+4) mod 5]^);
-  	end
+	begin
+  	SetTextStyle(CourierNewFont,0,30);
+  	setcolor(Black);
+  	i:= 30;
+    m:= 230;
+  end;
+  Assign(myFile, fileName);
+	Reset(myFile);
+	Repeat
+  	ReadLn(myFile, texttmp);
+  	if title=true then
+  		begin
+      	//draws loaded text on window if the title is true
+				OutTextXY(125,i,texttmp);
+  			i:= i + TextHeight(texttmp);
+     	 //changing colors of every line
+      	if i = 50 + TextHeight(texttmp) then
+      		setcolor(colors[(j+1) mod 5]^ )
+      	else if i = 50 + (TextHeight(texttmp)*2) then
+        	setcolor(colors[(j+2) mod 5]^)
+      	else if i = 50 + (TextHeight(texttmp)*3) then
+        	setcolor(colors[(j+3) mod 5]^)
+      	else setcolor(colors[(j+4) mod 5]^);
+  		end
   else if title = false then
     begin
       //draws loaded text on window if the title is false
     i:= i + TextHeight(texttmp);
-    OutTextXY(5,i+50,texttmp);
+    OutTextXY(m,i+50,texttmp);
     end;
 until Eof(myfile);
 close(myfile);
+end;
+
+procedure RewriteMenuResolution(j : integer);
+{used for writing in text file with difficulty settings
+, which is afterwards read by game}
+const
+  C_FNAME = 'MenuResolution.txt';
+
+var
+  tf: TextFile;
+
+begin
+  // Set the name of the file that will be created
+  AssignFile(tf, C_FNAME);
+
+  {$I+}
+
+  // Embed the file creation in a try/except block to handle errors gracefully
+  try
+    // Create the file, write some text and close it.
+    rewrite(tf);
+    case j of
+    0 :
+      begin
+        writeln(tf, '9');
+    		writeln(tf, '9');
+      end;
+    65:
+      begin
+        writeln(tf, '15');
+    		writeln(tf, '15');
+      end;
+    130:
+      begin
+        writeln(tf, '24');
+    		writeln(tf, '16');
+      end;
+
+    end;
+
+	CloseFile(tf);
+
+  except
+    // If there was an error the reason can be found here
+    on E: EInOutError do
+      writeln('File handling error occurred. Details: ', E.ClassName, '/', E.Message);
+  end;
 end;
 
 procedure AnimateTitle(var anim: AnimatType);
@@ -297,6 +352,17 @@ begin
   Back();
 end;
 
+procedure HighScore();
+{used for displaying highest scores in different difficulties of teh game}
+begin
+ SetBkColor(FloralWhite);
+ ClearDevice();
+ LoadFromFile('Highscore.txt', false);
+ DrawBack();
+ UpdateGraph(UpdateOn);
+ Back();
+end;
+
 procedure  Difficulty();
 var i,j : smallint;
     mouseEvent: MouseEventType;
@@ -317,6 +383,9 @@ begin
   					(170+j) - 12 ,word1[i]);
   	j:= j + 65;
 	end;
+  SetTextStyle(MSSansSerifFont,0,30);
+  SetColor(Black);
+  OutTextXY(235,60,'Difficulty settings');
 
   UpdateGraph(UpdateOn); //used for updating graphics
 
@@ -324,6 +393,8 @@ begin
   //and setuping the difficulty through text file
   while not diffset do
     begin
+      if closegraphrequest then
+      	exit();
       if PollMouseEvent(mouseEvent) then
   		begin
   			j := ProcessMouseEvents(buttonPressed);
@@ -332,6 +403,7 @@ begin
     	begin
       	PressButton(j, false);
         buttonPressed := false;
+        RewriteMenuResolution(j);
         diffset := true;
         BackToMainMenuGraphics()
     	end;
@@ -373,6 +445,7 @@ begin
     end;
   end;
   AnimateTitle2(anim, i);
+  UpdateGraph(UpdateOff); // used to reduce flickering of animated title
   if ((i mod 20) = 0) and buttonStillPressed then
   begin
   	UnpressButton(k);
@@ -391,7 +464,7 @@ begin
       begin
     		Instructions();
   		end;
-    //195: Highscore();
+    195: HighScore();
     end;
   end;
 end;

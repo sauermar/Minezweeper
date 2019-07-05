@@ -1,1 +1,6 @@
-
+Beginner
+Ryba : 256
+Intermediate
+Rajba : 564
+Expert
+Zajda : 800
