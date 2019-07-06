@@ -8,14 +8,17 @@ var
     i : integer;
     colors: array [0..4] of ^longword = ( @red,@orange,@green,@Blue,@Purple);
     word: array [0..3] of string = ( 'Start Game','Difficulty',
-    																	'Instructions','Highscore');
+    								'Instructions','Highscore');
     word1: array [0..2] of string = ( 'Beginner','Intermediate','Expert');
     buttonPressed : boolean;
+    bitmap : pointer;
 
 procedure Initialise();
 {Initialises the Graphics Window}
 var
   colourDepth, resolution, errcode: smallint;
+  size: longint;
+  f     : file;
   begin
   //Open the Graphics Window
   colourDepth :=SVGA;
@@ -33,13 +36,28 @@ var
      ReadLn();
      Halt(1);
      end;
-
+{loads the back icon}
+//returns the number of bytes needed to store the image
+	size:=ImageSize(1,1,69,45);
+ //reserves Size bytes memory on the heap, and returns a pointer to this memory
+  GetMem(bitmap,size);
+  {$I-} Assign(f,'back.bmp'); Reset(f,1); {$I+}
+ //checks for error
+  if (IOResult <> 0) or (FileSize(f) <> size) then
+   begin
+     writeln('Error: unable to load image file.');
+     Exit;
+   end;
+  //load the image into reserved memory
+  BlockRead(f,bitmap^,size);
+  Close(f);
   end;
 
 procedure Finalise();
 {Closes the Graphics window on request}
 begin
 	repeat until CloseGraphRequest;
+    FreeMem(bitmap);
     CloseGraph();
 end;
 
@@ -283,24 +301,7 @@ UpdateGraph(UpdateOn);
 end;
 
 procedure DrawBack();
-var size: longint;
-    f     : file;
-    bitmap : pointer;
 begin
- //returns the number of bytes needed to store the image
-	size:=ImageSize(1,1,69,45);
- //reserves Size bytes memory on the heap, and returns a pointer to this memory
-  GetMem(bitmap,size);
-  {$I-} Assign(f,'back.bmp'); Reset(f,1); {$I+}
- //checks for error
-  if (IOResult <> 0) or (FileSize(f) <> size) then
-   begin
-     writeln('Error: unable to load image file.');
-     Exit;
-   end;
-  //load the image into reserved memory
-  BlockRead(f,bitmap^,size);
-  Close(f);
   // Draws an image onto the window
   //x,y are coordinates of the left upper corner
   PutImage(0,0,bitmap^, NormalPut);
@@ -323,7 +324,9 @@ back := false;
 while not back do
   begin
     if closeGraphRequest then
-    	closegraph();
+      begin
+        exit();
+      end;
     if (PollMouseEvent(mouseEvent)) then
     begin
       GetMouseEvent(mouseEvent);
@@ -340,6 +343,7 @@ while not back do
           end;
         end;
     end;
+    delay(25);
   end;
 end;
 
@@ -415,6 +419,7 @@ end;
 
 procedure StartGame();
 begin
+	FreeMem(bitmap);
   Closegraph();
   executeprocess('Game01.exe',['']);
 end;
@@ -451,6 +456,7 @@ begin
   if ((i mod 20) = 0) and buttonStillPressed then
   begin
   	UnpressButton(k);
+    delay(50);
 		buttonStillPressed := false;
     case k of
     0:
