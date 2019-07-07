@@ -224,7 +224,7 @@ begin
     begin
       if (x >= 220) and (x <= 420) then
       begin
-    		if (y >= 150+j) and (y <= 190+j) then   // if the right button was clicked
+    		if (y >= 150+j) and (y <= 190+j) then   // if the left button was clicked
         begin                                  // in the area of menu button
           buttonPressed := true;
           ProcessMouseEvents := j;
